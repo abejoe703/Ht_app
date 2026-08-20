@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+
+  "name": "abejoe-ht",
+
+  "main": "src/index.js",
+
+  "compatibility_date": "2026-08-21",
+
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "HT_ROOM",
+        "class_name": "HTRoom"
+      }
+    ]
+  },
+
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "HTRoom"
+      ]
+    }
+  ]
+}
