@@ -6,35 +6,46 @@
     <style>
         body { text-align: center; font-family: sans-serif; padding-top: 50px; }
         #btnTalk { 
-            padding: 20px 40px; 
-            font-size: 24px; 
-            background-color: red; 
-            color: white; 
-            border: none; 
-            border-radius: 10px;
-            cursor: pointer;
+            padding: 20px 40px; font-size: 24px; 
+            background-color: red; color: white; 
+            border: none; border-radius: 10px; cursor: pointer;
         }
     </style>
 </head>
 <body>
     <h1>HT Online</h1>
-    
-    <!-- Ini tombolnya -->
     <button id="btnTalk">Tekan untuk Bicara</button>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         const btn = document.getElementById('btnTalk');
+        let mediaRecorder;
 
-        btn.addEventListener('mousedown', () => {
-            btn.style.backgroundColor = 'green';
-            console.log('Mulai bicara...');
+        // 1. Minta izin mikrofon
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            mediaRecorder = new MediaRecorder(stream);
+            
+            mediaRecorder.ondataavailable = (event) => {
+                socket.emit('audio-stream', event.data);
+            };
         });
 
-        btn.addEventListener('mouseup', () => {
+        // 2. Handle tombol (Support HP/Touch)
+        btn.addEventListener('touchstart', () => {
+            btn.style.backgroundColor = 'green';
+            mediaRecorder.start(100); // Kirim data tiap 100ms
+        });
+
+        btn.addEventListener('touchend', () => {
             btn.style.backgroundColor = 'red';
-            console.log('Selesai bicara.');
+            mediaRecorder.stop();
+        });
+
+        // 3. Menerima suara dari teman
+        socket.on('audio-stream', (blob) => {
+            const audio = new Audio(URL.createObjectURL(blob));
+            audio.play();
         });
     </script>
 </body>
