@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>HT Online</h1>
+    <button id="ptt">Tekan untuk Bicara</button>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const pttBtn = document.getElementById('ptt');
+        let mediaRecorder;
+
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = e => socket.emit('audio-stream', e.data);
+            
+            pttBtn.onmousedown = () => mediaRecorder.start();
+            pttBtn.onmouseup = () => mediaRecorder.stop();
+        });
+
+        socket.on('audio-stream', buffer => {
+            const audio = new Blob([buffer]);
+            const url = URL.createObjectURL(audio);
+            new Audio(url).play();
+        });
+    </script>
+</body>
+</html>
