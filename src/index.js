@@ -1,56 +1,51 @@
 import { DurableObject } from "cloudflare:workers";
 
-/*
-=========================================================
- ABEJOE HT
- CLOUDFLARE WORKER + DURABLE OBJECT
- WebSocket Radio Server
-=========================================================
-*/
+/* =========================================================
+   ABEJOE HT
+   CLOUDFLARE WORKER
+   WEBSOCKET + DURABLE OBJECT
+   WEBRTC SIGNALING
+========================================================= */
 
 export default {
     async fetch(request, env) {
 
         const url = new URL(request.url);
 
-        /*
-        ================================================
-        HEALTH CHECK
-        ================================================
-        */
+        /* =================================================
+           HEALTH CHECK
+        ================================================= */
 
         if (url.pathname === "/health") {
 
             return Response.json({
                 status: "online",
                 app: "AbeJoe HT",
-                server: "Cloudflare Worker",
                 websocket: true,
+                webrtc: true,
                 time: new Date().toISOString()
             });
         }
 
-        /*
-        ================================================
-        WEBSOCKET
-        ================================================
-        */
+
+        /* =================================================
+           WEBSOCKET
+        ================================================= */
 
         if (
             url.pathname === "/ws" &&
-            request.headers.get("Upgrade") === "websocket"
+            request.headers.get("Upgrade")
+                ?.toLowerCase() === "websocket"
         ) {
 
             const channel =
-                url.searchParams.get("channel") || "default";
-
-            /*
-            Semua HP dengan channel yang sama
-            masuk ke Durable Object yang sama.
-            */
+                url.searchParams.get("channel")
+                || "1";
 
             const id =
-                env.HT_ROOM.idFromName(channel);
+                env.HT_ROOM.idFromName(
+                    channel
+                );
 
             const room =
                 env.HT_ROOM.get(id);
@@ -58,22 +53,19 @@ export default {
             return room.fetch(request);
         }
 
-        /*
-        ================================================
-        STATIC WEBSITE
-        ================================================
-        */
+
+        /* =================================================
+           STATIC FILES
+        ================================================= */
 
         return env.ASSETS.fetch(request);
     }
 };
 
 
-/*
-=========================================================
- DURABLE OBJECT
-=========================================================
-*/
+/* =========================================================
+   DURABLE OBJECT
+========================================================= */
 
 export class HTRoom extends DurableObject {
 
@@ -84,40 +76,29 @@ export class HTRoom extends DurableObject {
         this.ctx = ctx;
         this.env = env;
 
-        /*
-        Auto ping/pong supaya koneksi HT
-        tetap sehat.
-        */
-
-        this.ctx.setWebSocketAutoResponse(
-            new WebSocketRequestResponsePair(
-                "ping",
-                "pong"
-            )
-        );
+        this.clients = new Map();
     }
 
 
-    /*
-    =====================================================
-    WEBSOCKET CONNECT
-    =====================================================
-    */
+    /* =====================================================
+       FETCH
+    ===================================================== */
 
     async fetch(request) {
 
         if (
             request.headers.get("Upgrade")
-            !== "websocket"
+                ?.toLowerCase() !== "websocket"
         ) {
 
             return new Response(
-                "WebSocket endpoint",
+                "AbeJoe HT WebSocket Server",
                 {
                     status: 426
                 }
             );
         }
+
 
         const pair =
             new WebSocketPair();
@@ -128,318 +109,545 @@ export class HTRoom extends DurableObject {
         const server =
             pair[1];
 
-        /*
-        Accept WebSocket dengan
-        Hibernation API.
-        */
 
         this.ctx.acceptWebSocket(server);
 
-        /*
-        Data koneksi
-        */
+
+        const clientId =
+            crypto.randomUUID();
+
+
+        const url =
+            new URL(request.url);
+
+
+        const channel =
+            url.searchParams.get(
+                "channel"
+            ) || "1";
+
+
+        this.clients.set(
+            clientId,
+            {
+                socket: server,
+                callsign: "HT",
+                channel
+            }
+        );
+
 
         server.serializeAttachment({
-            joinedAt: Date.now(),
-            channel:
-                new URL(request.url)
-                    .searchParams
-                    .get("channel")
-                || "default"
+            clientId,
+            channel
         });
 
-        /*
-        Beritahu client bahwa koneksi berhasil.
-        */
 
-        server.send(JSON.stringify({
+        /* =================================================
+           SEND CONNECTION INFO
+        ================================================= */
 
-            type: "connected",
+        server.send(
+            JSON.stringify({
 
-            message:
-                "AbeJoe HT connected",
+                type: "connected",
 
-            users:
-                this.ctx.getWebSockets().length
+                clientId,
 
-        }));
+                channel,
 
-        /*
-        Broadcast jumlah pengguna.
-        */
+                users:
+                    this.clients.size
+
+            })
+        );
+
+
+        /* =================================================
+           UPDATE USER COUNT
+        ================================================= */
 
         this.broadcast({
 
             type: "users",
 
             count:
-                this.ctx.getWebSockets().length
+                this.clients.size
 
-        }, server);
-
-        return new Response(null, {
-            status: 101,
-            webSocket: client
         });
+
+
+        return new Response(
+            null,
+            {
+                status: 101,
+                webSocket: client
+            }
+        );
     }
 
 
-    /*
-    =====================================================
-    MESSAGE
-    =====================================================
-    */
+    /* =====================================================
+       MESSAGE
+    ===================================================== */
 
-    async webSocketMessage(ws, message) {
+    async webSocketMessage(
+        ws,
+        message
+    ) {
 
         let data;
 
         try {
 
-            /*
-            JSON message
-            */
-
-            if (typeof message === "string") {
-
-                data =
-                    JSON.parse(message);
-
-            } else {
-
+            if (
+                typeof message !==
+                "string"
+            ) {
                 return;
             }
 
-        } catch (error) {
+            data =
+                JSON.parse(message);
 
-            ws.send(JSON.stringify({
+        } catch {
 
-                type: "error",
+            ws.send(
+                JSON.stringify({
 
-                message:
-                    "Format pesan tidak valid"
+                    type: "error",
 
-            }));
+                    message:
+                        "Invalid JSON"
 
-            return;
-        }
-
-
-        /*
-        =================================================
-        PING
-        =================================================
-        */
-
-        if (data.type === "ping") {
-
-            ws.send(JSON.stringify({
-                type: "pong"
-            }));
+                })
+            );
 
             return;
         }
 
 
-        /*
-        =================================================
-        JOIN
-        =================================================
-        */
+        const attachment =
+            ws.deserializeAttachment();
 
-        if (data.type === "join") {
+
+        if (!attachment) {
+            return;
+        }
+
+
+        const senderId =
+            attachment.clientId;
+
+
+        const sender =
+            this.clients.get(
+                senderId
+            );
+
+
+        if (!sender) {
+            return;
+        }
+
+
+        /* =================================================
+           JOIN
+        ================================================= */
+
+        if (
+            data.type === "join"
+        ) {
+
+            sender.callsign =
+                String(
+                    data.callsign
+                    || "HT"
+                ).substring(
+                    0,
+                    20
+                );
+
 
             ws.serializeAttachment({
-
-                joinedAt: Date.now(),
-
+                clientId: senderId,
                 channel:
-                    data.channel || "default",
-
+                    sender.channel,
                 callsign:
-                    data.callsign || "HT"
-
+                    sender.callsign
             });
 
-            this.broadcast({
 
-                type: "user-joined",
+            this.broadcast(
+                {
 
-                callsign:
-                    data.callsign || "HT",
+                    type:
+                        "user-joined",
 
-                users:
-                    this.ctx.getWebSockets().length
+                    clientId:
+                        senderId,
 
-            });
+                    callsign:
+                        sender.callsign,
+
+                    users:
+                        this.clients.size
+
+                },
+                senderId
+            );
+
 
             return;
         }
 
 
-        /*
-        =================================================
-        PTT START
-        =================================================
-        */
+        /* =================================================
+           PTT START
+        ================================================= */
 
-        if (data.type === "ptt-start") {
+        if (
+            data.type ===
+            "ptt-start"
+        ) {
 
-            this.broadcast({
+            this.broadcast(
+                {
 
-                type: "ptt-start",
+                    type:
+                        "ptt-start",
 
-                callsign:
-                    data.callsign || "HT"
+                    clientId:
+                        senderId,
 
-            }, ws);
+                    callsign:
+                        sender.callsign
 
-            return;
-        }
-
-
-        /*
-        =================================================
-        PTT STOP
-        =================================================
-        */
-
-        if (data.type === "ptt-stop") {
-
-            this.broadcast({
-
-                type: "ptt-stop",
-
-                callsign:
-                    data.callsign || "HT"
-
-            }, ws);
+                },
+                senderId
+            );
 
             return;
         }
 
 
-        /*
-        =================================================
-        RADIO MESSAGE
-        =================================================
-        */
+        /* =================================================
+           PTT STOP
+        ================================================= */
 
-        if (data.type === "radio-message") {
+        if (
+            data.type ===
+            "ptt-stop"
+        ) {
 
-            this.broadcast({
+            this.broadcast(
+                {
 
-                type: "radio-message",
+                    type:
+                        "ptt-stop",
 
-                callsign:
-                    data.callsign || "HT",
+                    clientId:
+                        senderId,
 
-                message:
-                    data.message || "",
+                    callsign:
+                        sender.callsign
 
-                time:
-                    Date.now()
-
-            }, ws);
+                },
+                senderId
+            );
 
             return;
         }
 
 
-        /*
-        =================================================
-        AUDIO DATA
-        =================================================
-        */
+        /* =================================================
+           WEBRTC OFFER
+        ================================================= */
 
-        if (data.type === "audio") {
+        if (
+            data.type ===
+            "webrtc-offer"
+        ) {
 
-            /*
-            Data audio diteruskan ke
-            HP lain dalam channel.
-            */
+            this.sendTo(
+                data.target,
+                {
 
-            this.broadcast({
+                    type:
+                        "webrtc-offer",
 
-                type: "audio",
+                    sender:
+                        senderId,
 
-                callsign:
-                    data.callsign || "HT",
+                    offer:
+                        data.offer
 
-                audio:
-                    data.audio || null
+                }
+            );
 
-            }, ws);
+            return;
+        }
+
+
+        /* =================================================
+           WEBRTC ANSWER
+        ================================================= */
+
+        if (
+            data.type ===
+            "webrtc-answer"
+        ) {
+
+            this.sendTo(
+                data.target,
+                {
+
+                    type:
+                        "webrtc-answer",
+
+                    sender:
+                        senderId,
+
+                    answer:
+                        data.answer
+
+                }
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           ICE CANDIDATE
+        ================================================= */
+
+        if (
+            data.type ===
+            "webrtc-ice"
+        ) {
+
+            this.sendTo(
+                data.target,
+                {
+
+                    type:
+                        "webrtc-ice",
+
+                    sender:
+                        senderId,
+
+                    candidate:
+                        data.candidate
+
+                }
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           RADIO MESSAGE
+        ================================================= */
+
+        if (
+            data.type ===
+            "radio-message"
+        ) {
+
+            this.broadcast(
+                {
+
+                    type:
+                        "radio-message",
+
+                    clientId:
+                        senderId,
+
+                    callsign:
+                        sender.callsign,
+
+                    message:
+                        String(
+                            data.message
+                            || ""
+                        ).substring(
+                            0,
+                            500
+                        ),
+
+                    time:
+                        Date.now()
+
+                },
+                senderId
+            );
 
             return;
         }
     }
 
 
-    /*
-    =====================================================
-    CLOSE
-    =====================================================
-    */
+    /* =====================================================
+       CLOSE
+    ===================================================== */
 
-    async webSocketClose(ws) {
+    async webSocketClose(
+        ws
+    ) {
+
+        const attachment =
+            ws.deserializeAttachment();
+
+
+        if (!attachment) {
+            return;
+        }
+
+
+        const clientId =
+            attachment.clientId;
+
+
+        const user =
+            this.clients.get(
+                clientId
+            );
+
+
+        this.clients.delete(
+            clientId
+        );
+
 
         this.broadcast({
 
-            type: "users",
+            type:
+                "user-left",
 
-            count:
-                Math.max(
-                    0,
-                    this.ctx.getWebSockets().length - 1
-                )
+            clientId,
+
+            callsign:
+                user?.callsign
+                || "HT",
+
+            users:
+                this.clients.size
 
         });
     }
 
 
-    /*
-    =====================================================
-    ERROR
-    =====================================================
-    */
+    /* =====================================================
+       ERROR
+    ===================================================== */
 
-    async webSocketError(ws) {
+    async webSocketError(
+        ws
+    ) {
 
-        console.log(
-            "WebSocket error"
+        const attachment =
+            ws.deserializeAttachment();
+
+
+        if (!attachment) {
+            return;
+        }
+
+
+        this.clients.delete(
+            attachment.clientId
         );
+
+
+        this.broadcast({
+
+            type:
+                "users",
+
+            count:
+                this.clients.size
+
+        });
     }
 
 
-    /*
-    =====================================================
-    BROADCAST
-    =====================================================
-    */
+    /* =====================================================
+       SEND TO CLIENT
+    ===================================================== */
 
-    broadcast(data, except = null) {
+    sendTo(
+        clientId,
+        data
+    ) {
+
+        const client =
+            this.clients.get(
+                clientId
+            );
+
+
+        if (!client) {
+            return;
+        }
+
+
+        try {
+
+            client.socket.send(
+                JSON.stringify(data)
+            );
+
+        } catch {
+
+            this.clients.delete(
+                clientId
+            );
+        }
+    }
+
+
+    /* =====================================================
+       BROADCAST
+    ===================================================== */
+
+    broadcast(
+        data,
+        except = null
+    ) {
 
         const message =
             JSON.stringify(data);
 
+
         for (
-            const ws
-            of this.ctx.getWebSockets()
+            const [
+                clientId,
+                client
+            ]
+            of this.clients
         ) {
 
-            if (ws === except)
+            if (
+                clientId ===
+                except
+            ) {
                 continue;
+            }
+
 
             try {
 
-                ws.send(message);
+                client.socket.send(
+                    message
+                );
 
-            } catch (error) {
+            } catch {
 
-                try {
-                    ws.close();
-                } catch {}
+                this.clients.delete(
+                    clientId
+                );
             }
         }
     }
