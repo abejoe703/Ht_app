@@ -1,0 +1,375 @@
+/* =========================================================
+   ABEJOE HT
+   HT RADIO INTERFACE
+========================================================= */
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #080d18;
+    color: #ffffff;
+}
+
+body {
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   MAIN RADIO
+========================================================= */
+
+.radio {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    background:
+        linear-gradient(
+            180deg,
+            #0d1627 0%,
+            #080d18 100%
+        );
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.top {
+    text-align: center;
+    padding: 12px 0 18px;
+}
+
+.logo {
+    font-size: 25px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.subtitle {
+    margin-top: 5px;
+    color: #7f8ba3;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.status {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 7px 13px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .5px;
+}
+
+.status.online {
+    background: rgba(34, 197, 94, .15);
+    color: #4ade80;
+}
+
+.status.offline {
+    background: rgba(239, 68, 68, .15);
+    color: #f87171;
+}
+
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+.settings {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field label {
+    color: #7f8ba3;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.field input {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #26334a;
+    border-radius: 10px;
+    outline: none;
+    background: #111b2d;
+    color: #ffffff;
+    font-size: 15px;
+}
+
+.field input:focus {
+    border-color: #4f8cff;
+}
+
+
+/* =========================================================
+   RADIO SCREEN
+========================================================= */
+
+.radio-screen {
+    width: 100%;
+    min-height: 220px;
+    padding: 14px;
+    border: 1px solid #26334a;
+    border-radius: 16px;
+    background: #050a12;
+    box-shadow:
+        inset 0 0 25px rgba(0, 0, 0, .35),
+        0 10px 30px rgba(0, 0, 0, .2);
+}
+
+.screen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #1d293c;
+    color: #7f8ba3;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.screen-header b {
+    color: #ffffff;
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   LOG
+========================================================= */
+
+#log {
+    height: 175px;
+    margin-top: 8px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+#log::-webkit-scrollbar {
+    width: 4px;
+}
+
+#log::-webkit-scrollbar-thumb {
+    background: #34435c;
+    border-radius: 10px;
+}
+
+.log-item {
+    padding: 8px 4px;
+    border-bottom: 1px solid #121b2a;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #8d9ab0;
+}
+
+.log-item.tx {
+    color: #60a5fa;
+}
+
+.log-item.rx {
+    color: #4ade80;
+}
+
+.log-item.system {
+    color: #8d9ab0;
+}
+
+
+/* =========================================================
+   RADIO STATE
+========================================================= */
+
+.radio-state {
+    margin: 20px 0 12px;
+    text-align: center;
+    color: #7f8ba3;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 3px;
+}
+
+.radio-state.tx-state {
+    color: #60a5fa;
+}
+
+.radio-state.rx-state {
+    color: #4ade80;
+}
+
+
+/* =========================================================
+   PTT BUTTON
+========================================================= */
+
+.ptt {
+    width: 190px;
+    height: 190px;
+    margin: 4px auto 20px;
+    border: 8px solid #1c2940;
+    border-radius: 50%;
+    outline: none;
+    background:
+        radial-gradient(
+            circle at 35% 30%,
+            #3b4b67 0%,
+            #18243a 45%,
+            #0d1627 100%
+        );
+    color: #ffffff;
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    cursor: pointer;
+    user-select: none;
+    touch-action: none;
+    -webkit-user-select: none;
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, .45),
+        inset 0 3px 8px rgba(255, 255, 255, .08);
+    transition:
+        transform .08s ease,
+        box-shadow .08s ease;
+}
+
+.ptt:active,
+.ptt.transmitting {
+    transform: scale(.94);
+    background:
+        radial-gradient(
+            circle at 35% 30%,
+            #60a5fa 0%,
+            #2563eb 45%,
+            #172554 100%
+        );
+    box-shadow:
+        0 0 35px rgba(59, 130, 246, .45),
+        inset 0 3px 8px rgba(255, 255, 255, .12);
+}
+
+
+/* =========================================================
+   BOTTOM BUTTONS
+========================================================= */
+
+.bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.btn {
+    min-height: 46px;
+    border: 1px solid #26334a;
+    border-radius: 11px;
+    background: #111b2d;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .5px;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.btn:active {
+    transform: scale(.97);
+    background: #19263d;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.users {
+    margin-top: auto;
+    padding-top: 18px;
+    text-align: center;
+    color: #4d5b72;
+    font-size: 10px;
+    letter-spacing: .8px;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 360px) {
+
+    .radio {
+        padding: 14px;
+    }
+
+    .logo {
+        font-size: 22px;
+    }
+
+    .ptt {
+        width: 165px;
+        height: 165px;
+        font-size: 26px;
+    }
+
+    .radio-screen {
+        min-height: 200px;
+    }
+
+    #log {
+        height: 155px;
+    }
+}
+
+
+/* =========================================================
+   LARGER SCREEN
+========================================================= */
+
+@media (min-width: 600px) {
+
+    body {
+        padding: 25px 0;
+    }
+
+    .radio {
+        min-height: calc(100vh - 50px);
+        border: 1px solid #1d293c;
+        border-radius: 20px;
+        box-shadow:
+            0 20px 60px rgba(0, 0, 0, .35);
+    }
+}
