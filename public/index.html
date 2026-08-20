@@ -1,26 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>HT Online</title>
+    <style>
+        body { text-align: center; font-family: sans-serif; padding-top: 50px; }
+        #btnTalk { 
+            padding: 20px 40px; 
+            font-size: 24px; 
+            background-color: red; 
+            color: white; 
+            border: none; 
+            border-radius: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
 <body>
     <h1>HT Online</h1>
-    <button id="ptt">Tekan untuk Bicara</button>
+    
+    <!-- Ini tombolnya -->
+    <button id="btnTalk">Tekan untuk Bicara</button>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        const pttBtn = document.getElementById('ptt');
-        let mediaRecorder;
+        const btn = document.getElementById('btnTalk');
 
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.ondataavailable = e => socket.emit('audio-stream', e.data);
-            
-            pttBtn.onmousedown = () => mediaRecorder.start();
-            pttBtn.onmouseup = () => mediaRecorder.stop();
+        btn.addEventListener('mousedown', () => {
+            btn.style.backgroundColor = 'green';
+            console.log('Mulai bicara...');
         });
 
-        socket.on('audio-stream', buffer => {
-            const audio = new Blob([buffer]);
-            const url = URL.createObjectURL(audio);
-            new Audio(url).play();
+        btn.addEventListener('mouseup', () => {
+            btn.style.backgroundColor = 'red';
+            console.log('Selesai bicara.');
         });
     </script>
 </body>
