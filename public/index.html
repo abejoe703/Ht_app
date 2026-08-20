@@ -2,51 +2,936 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>HT Online</title>
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <meta name="theme-color" content="#111827">
+
+    <title>AbeJoe HT</title>
+
     <style>
-        body { text-align: center; font-family: sans-serif; padding-top: 50px; }
-        #btnTalk { 
-            padding: 20px 40px; font-size: 24px; 
-            background-color: red; color: white; 
-            border: none; border-radius: 10px; cursor: pointer;
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #0b1120;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .radio {
+            width: min(430px, 100%);
+            height: 100%;
+            max-height: 850px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            background: #111827;
+        }
+
+        .top {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            margin-top: 4px;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        .status {
+            margin-top: 12px;
+            padding: 9px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 13px;
+            background: #374151;
+        }
+
+        .status.online {
+            background: #064e3b;
+            color: #6ee7b7;
+        }
+
+        .status.offline {
+            background: #7f1d1d;
+            color: #fecaca;
+        }
+
+        .settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .field label {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #374151;
+            border-radius: 9px;
+            outline: none;
+            background: #030712;
+            color: #fff;
+            font-size: 15px;
+        }
+
+        input:focus {
+            border-color: #60a5fa;
+        }
+
+        .radio-screen {
+            flex: 1;
+            min-height: 180px;
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 12px;
+            background: #020617;
+            border: 1px solid #1f2937;
+            overflow-y: auto;
+        }
+
+        .screen-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        #log {
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .log-item {
+            padding: 4px 0;
+            border-bottom: 1px solid #111827;
+        }
+
+        .rx {
+            color: #86efac;
+        }
+
+        .tx {
+            color: #93c5fd;
+        }
+
+        .system {
+            color: #facc15;
+        }
+
+        .radio-state {
+            text-align: center;
+            min-height: 28px;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .tx-state {
+            color: #f87171;
+        }
+
+        .rx-state {
+            color: #4ade80;
+        }
+
+        .ptt {
+            width: 190px;
+            height: 190px;
+            margin: 10px auto 20px;
+            border: 8px solid #374151;
+            border-radius: 50%;
+            background: #1f2937;
+            color: #fff;
+            font-size: 27px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            box-shadow:
+                0 12px 30px rgba(0, 0, 0, .45),
+                inset 0 0 25px rgba(0, 0, 0, .4);
+
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .ptt:active,
+        .ptt.transmitting {
+            background: #991b1b;
+            border-color: #ef4444;
+            transform: scale(.97);
+        }
+
+        .bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px;
+            border: 0;
+            border-radius: 9px;
+            background: #1f2937;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .btn:active {
+            transform: scale(.98);
+            background: #374151;
+        }
+
+        .users {
+            text-align: center;
+            margin-top: 10px;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        @media (max-height: 650px) {
+
+            .ptt {
+                width: 145px;
+                height: 145px;
+                margin-bottom: 10px;
+            }
+
+            .radio-screen {
+                min-height: 120px;
+            }
         }
     </style>
 </head>
+
 <body>
-    <h1>HT Online</h1>
-    <button id="btnTalk">Tekan untuk Bicara</button>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const btn = document.getElementById('btnTalk');
-        let mediaRecorder;
+<div class="radio">
 
-        // 1. Minta izin mikrofon
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-            mediaRecorder = new MediaRecorder(stream);
-            
-            mediaRecorder.ondataavailable = (event) => {
-                socket.emit('audio-stream', event.data);
-            };
-        });
+    <div class="top">
 
-        // 2. Handle tombol (Support HP/Touch)
-        btn.addEventListener('touchstart', () => {
-            btn.style.backgroundColor = 'green';
-            mediaRecorder.start(100); // Kirim data tiap 100ms
-        });
+        <div class="logo">
+            📻 ABEJOE HT
+        </div>
 
-        btn.addEventListener('touchend', () => {
-            btn.style.backgroundColor = 'red';
-            mediaRecorder.stop();
-        });
+        <div class="subtitle">
+            CLOUD RADIO COMMUNICATION
+        </div>
 
-        // 3. Menerima suara dari teman
-        socket.on('audio-stream', (blob) => {
-            const audio = new Audio(URL.createObjectURL(blob));
-            audio.play();
-        });
-    </script>
+        <div
+            id="status"
+            class="status offline"
+        >
+            🔴 SERVER OFFLINE
+        </div>
+
+    </div>
+
+
+    <!-- SETTINGS -->
+
+    <div class="settings">
+
+        <div class="field">
+
+            <label>
+                CALLSIGN
+            </label>
+
+            <input
+                id="callsign"
+                type="text"
+                maxlength="16"
+                value="ABEJOE"
+                autocomplete="off"
+            >
+
+        </div>
+
+
+        <div class="field">
+
+            <label>
+                CHANNEL
+            </label>
+
+            <input
+                id="channel"
+                type="text"
+                maxlength="16"
+                value="1"
+                autocomplete="off"
+            >
+
+        </div>
+
+    </div>
+
+
+    <!-- SCREEN -->
+
+    <div class="radio-screen">
+
+        <div class="screen-header">
+
+            <span>
+                CHANNEL <b id="channelDisplay">1</b>
+            </span>
+
+            <span>
+                <span id="users">0</span> USERS
+            </span>
+
+        </div>
+
+        <div id="log"></div>
+
+    </div>
+
+
+    <!-- TX/RX -->
+
+    <div
+        id="radioState"
+        class="radio-state"
+    >
+        STANDBY
+    </div>
+
+
+    <!-- PTT -->
+
+    <button
+        id="ptt"
+        class="ptt"
+        type="button"
+    >
+        PTT
+    </button>
+
+
+    <!-- BUTTONS -->
+
+    <div class="bottom">
+
+        <button
+            id="connectBtn"
+            class="btn"
+            type="button"
+        >
+            📡 CONNECT
+        </button>
+
+        <button
+            id="disconnectBtn"
+            class="btn"
+            type="button"
+        >
+            ⛔ DISCONNECT
+        </button>
+
+    </div>
+
+
+    <div class="users">
+        WebSocket Radio • AbeJoe
+    </div>
+
+</div>
+
+
+<script>
+
+"use strict";
+
+
+/* =====================================================
+   ELEMENTS
+===================================================== */
+
+const statusEl =
+    document.getElementById("status");
+
+const callsignEl =
+    document.getElementById("callsign");
+
+const channelEl =
+    document.getElementById("channel");
+
+const channelDisplay =
+    document.getElementById("channelDisplay");
+
+const usersEl =
+    document.getElementById("users");
+
+const logEl =
+    document.getElementById("log");
+
+const radioState =
+    document.getElementById("radioState");
+
+const ptt =
+    document.getElementById("ptt");
+
+const connectBtn =
+    document.getElementById("connectBtn");
+
+const disconnectBtn =
+    document.getElementById("disconnectBtn");
+
+
+/* =====================================================
+   SOCKET
+===================================================== */
+
+let socket = null;
+
+
+/* =====================================================
+   LOCAL STORAGE
+===================================================== */
+
+callsignEl.value =
+    localStorage.getItem("abejoe_callsign")
+    || "ABEJOE";
+
+channelEl.value =
+    localStorage.getItem("abejoe_channel")
+    || "1";
+
+
+function saveSettings() {
+
+    localStorage.setItem(
+        "abejoe_callsign",
+        callsignEl.value.trim()
+    );
+
+    localStorage.setItem(
+        "abejoe_channel",
+        channelEl.value.trim()
+    );
+
+    channelDisplay.textContent =
+        channelEl.value.trim() || "1";
+}
+
+
+callsignEl.addEventListener(
+    "change",
+    saveSettings
+);
+
+channelEl.addEventListener(
+    "change",
+    saveSettings
+);
+
+
+/* =====================================================
+   LOG
+===================================================== */
+
+function addLog(
+    message,
+    type = "system"
+) {
+
+    const item =
+        document.createElement("div");
+
+    item.className =
+        "log-item " + type;
+
+    const time =
+        new Date().toLocaleTimeString(
+            "id-ID",
+            {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            }
+        );
+
+    item.textContent =
+        `[${time}] ${message}`;
+
+    logEl.appendChild(item);
+
+    logEl.scrollTop =
+        logEl.scrollHeight;
+}
+
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+function setStatus(
+    online,
+    text
+) {
+
+    statusEl.className =
+        online
+            ? "status online"
+            : "status offline";
+
+    statusEl.textContent =
+        online
+            ? "🟢 " + text
+            : "🔴 " + text;
+}
+
+
+/* =====================================================
+   CONNECT
+===================================================== */
+
+function connectHT() {
+
+    saveSettings();
+
+    if (
+        socket &&
+        socket.readyState === WebSocket.OPEN
+    ) {
+
+        addLog(
+            "Sudah terhubung.",
+            "system"
+        );
+
+        return;
+    }
+
+
+    const protocol =
+        location.protocol === "https:"
+            ? "wss:"
+            : "ws:";
+
+
+    const channel =
+        encodeURIComponent(
+            channelEl.value.trim() || "1"
+        );
+
+
+    const wsUrl =
+        `${protocol}//${location.host}/ws?channel=${channel}`;
+
+
+    addLog(
+        "Menghubungkan ke server...",
+        "system"
+    );
+
+
+    socket =
+        new WebSocket(wsUrl);
+
+
+    socket.onopen = () => {
+
+        setStatus(
+            true,
+            "SERVER ONLINE"
+        );
+
+        addLog(
+            "Terhubung ke channel " +
+            channelEl.value,
+            "system"
+        );
+
+
+        socket.send(
+            JSON.stringify({
+
+                type: "join",
+
+                channel:
+                    channelEl.value.trim() || "1",
+
+                callsign:
+                    callsignEl.value.trim()
+                    || "ABEJOE"
+
+            })
+        );
+    };
+
+
+    socket.onmessage =
+        function(event) {
+
+            let data;
+
+            try {
+
+                data =
+                    JSON.parse(event.data);
+
+            } catch {
+
+                return;
+            }
+
+
+            /* CONNECTED */
+
+            if (
+                data.type === "connected"
+            ) {
+
+                usersEl.textContent =
+                    data.users || 1;
+
+                return;
+            }
+
+
+            /* USERS */
+
+            if (
+                data.type === "users"
+            ) {
+
+                usersEl.textContent =
+                    data.count || 0;
+
+                return;
+            }
+
+
+            /* USER JOINED */
+
+            if (
+                data.type === "user-joined"
+            ) {
+
+                usersEl.textContent =
+                    data.users || 0;
+
+                addLog(
+                    `${data.callsign} bergabung`,
+                    "system"
+                );
+
+                return;
+            }
+
+
+            /* PTT START */
+
+            if (
+                data.type === "ptt-start"
+            ) {
+
+                radioState.textContent =
+                    "RX";
+
+                radioState.className =
+                    "radio-state rx-state";
+
+                addLog(
+                    `${data.callsign} TRANSMIT`,
+                    "rx"
+                );
+
+                return;
+            }
+
+
+            /* PTT STOP */
+
+            if (
+                data.type === "ptt-stop"
+            ) {
+
+                radioState.textContent =
+                    "STANDBY";
+
+                radioState.className =
+                    "radio-state";
+
+                return;
+            }
+
+
+            /* RADIO MESSAGE */
+
+            if (
+                data.type === "radio-message"
+            ) {
+
+                addLog(
+                    `${data.callsign}: ${data.message}`,
+                    "rx"
+                );
+
+                return;
+            }
+        };
+
+
+    socket.onclose =
+        function() {
+
+            setStatus(
+                false,
+                "SERVER OFFLINE"
+            );
+
+            radioState.textContent =
+                "STANDBY";
+
+            radioState.className =
+                "radio-state";
+
+            addLog(
+                "Koneksi terputus.",
+                "system"
+            );
+        };
+
+
+    socket.onerror =
+        function() {
+
+            setStatus(
+                false,
+                "CONNECTION ERROR"
+            );
+
+            addLog(
+                "Gagal terhubung ke server.",
+                "system"
+            );
+        };
+}
+
+
+/* =====================================================
+   DISCONNECT
+===================================================== */
+
+function disconnectHT() {
+
+    if (socket) {
+
+        socket.close();
+
+        socket = null;
+    }
+
+    setStatus(
+        false,
+        "SERVER OFFLINE"
+    );
+}
+
+
+/* =====================================================
+   PTT START
+===================================================== */
+
+function startPTT(
+    event
+) {
+
+    if (event) {
+        event.preventDefault();
+    }
+
+
+    if (
+        !socket ||
+        socket.readyState !== WebSocket.OPEN
+    ) {
+
+        addLog(
+            "Hubungkan ke server terlebih dahulu.",
+            "system"
+        );
+
+        return;
+    }
+
+
+    ptt.classList.add(
+        "transmitting"
+    );
+
+    radioState.textContent =
+        "TX";
+
+    radioState.className =
+        "radio-state tx-state";
+
+
+    socket.send(
+        JSON.stringify({
+
+            type: "ptt-start",
+
+            callsign:
+                callsignEl.value.trim()
+                || "ABEJOE"
+
+        })
+    );
+
+
+    addLog(
+        "ANDA TRANSMIT",
+        "tx"
+    );
+}
+
+
+/* =====================================================
+   PTT STOP
+===================================================== */
+
+function stopPTT(
+    event
+) {
+
+    if (event) {
+        event.preventDefault();
+    }
+
+
+    ptt.classList.remove(
+        "transmitting"
+    );
+
+    radioState.textContent =
+        "STANDBY";
+
+    radioState.className =
+        "radio-state";
+
+
+    if (
+        socket &&
+        socket.readyState === WebSocket.OPEN
+    ) {
+
+        socket.send(
+            JSON.stringify({
+
+                type: "ptt-stop",
+
+                callsign:
+                    callsignEl.value.trim()
+                    || "ABEJOE"
+
+            })
+        );
+    }
+}
+
+
+/* =====================================================
+   TOUCH PTT
+===================================================== */
+
+ptt.addEventListener(
+    "pointerdown",
+    startPTT
+);
+
+ptt.addEventListener(
+    "pointerup",
+    stopPTT
+);
+
+ptt.addEventListener(
+    "pointercancel",
+    stopPTT
+);
+
+ptt.addEventListener(
+    "pointerleave",
+    function(event) {
+
+        if (
+            event.buttons
+        ) {
+            stopPTT(event);
+        }
+    }
+);
+
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
+connectBtn.addEventListener(
+    "click",
+    connectHT
+);
+
+disconnectBtn.addEventListener(
+    "click",
+    disconnectHT
+);
+
+
+/* =====================================================
+   INITIAL
+===================================================== */
+
+saveSettings();
+
+addLog(
+    "AbeJoe HT siap digunakan.",
+    "system"
+);
+
+</script>
+
 </body>
 </html>
